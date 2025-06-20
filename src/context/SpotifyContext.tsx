@@ -63,20 +63,16 @@ export const SpotifyProvider = ({ children }: { children: ReactNode }) => {
     };
 
     useEffect(() => {
-        if (!accessToken) return;
-
-        fetch('https://api.spotify.com/v1/me', {
-            headers: { Authorization: `Bearer ${accessToken}` },
-        })
+        fetch('http://127.0.0.1:3001/me', { credentials: 'include' })
             .then((res) => res.json())
             .then((data) => {
-                setUser({ display_name: data.display_name, email: data.email });
+                if (data?.display_name) {
+                    setUser({ display_name: data.display_name, email: data.email });
+                    setAccessTokenState('cookie'); // identifie que c’est en cookie
+                }
             })
-            .catch((err) => {
-                console.error('[SpotifyContext] Failed to fetch user info:', err);
-                setUser(null);
-            });
-    }, [accessToken]);
+            .catch(() => setUser(null));
+    }, []);
 
     useEffect(() => {
         if (!accessToken) return;
