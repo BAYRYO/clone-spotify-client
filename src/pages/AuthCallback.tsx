@@ -5,27 +5,17 @@ const AuthCallback = () => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            if (event.origin !== 'http://127.0.0.1:5173') return;
+        // Redirige simplement après quelques secondes
+        const timeout = setTimeout(() => {
+            navigate('/', { replace: true });
+        }, 1500);
 
-            const { type, accessToken, refreshToken } = event.data || {};
-            if (type === 'spotify_tokens' && accessToken && refreshToken) {
-                localStorage.setItem('access_token', accessToken);
-                localStorage.setItem('refresh_token', refreshToken);
-                navigate('/', { replace: true });
-            }
-        };
-
-        window.addEventListener('message', handleMessage);
-        // Fallback : redirige si la page est accédée seule
-        setTimeout(() => navigate('/'), 3000);
-
-        return () => window.removeEventListener('message', handleMessage);
+        return () => clearTimeout(timeout);
     }, [navigate]);
 
     return (
         <div className="text-white text-center mt-10">
-            Connexion en cours...
+            Connexion en cours... Tu vas être redirigé.
         </div>
     );
 };

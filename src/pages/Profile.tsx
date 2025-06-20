@@ -1,22 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useSpotify } from '../hooks/useSpotify';
-import { useSpotifyContext } from '../context/SpotifyContext';
 
 export default function Profile() {
-    const { accessToken } = useSpotifyContext();
     const { fetchWithAuth } = useSpotify();
     const [profile, setProfile] = useState<any>(null);
     const [playlists, setPlaylists] = useState<any[]>([]);
     const [copied, setCopied] = useState(false);
 
     useEffect(() => {
-        if (!accessToken) return;
+        fetchWithAuth('me')
+            .then(setProfile)
+            .catch(console.error);
 
-        fetchWithAuth('me').then(setProfile).catch(console.error);
         fetchWithAuth('me/playlists')
             .then((res) => setPlaylists(res.items))
             .catch(console.error);
-    }, [accessToken]);
+    }, []);
 
     const handleCopy = () => {
         if (!profile?.id) return;

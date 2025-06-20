@@ -1,44 +1,23 @@
 import { useSpotifyContext } from '../context/SpotifyContext';
 
 export const useSpotify = () => {
-    const { accessToken, deviceId, playTrack: playTrackContext } = useSpotifyContext();
+    const { playTrack: playTrackContext } = useSpotifyContext();
 
     const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
-        const res = await fetch(`https://api.spotify.com/v1/${endpoint}`, {
+        const res = await fetch(`http://127.0.0.1:3001/api/${endpoint}`, {
             ...options,
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${accessToken}`,
-                ...options.headers,
-            },
+            credentials: 'include',
         });
-
-        if (!res.ok) throw new Error(`Spotify API error: ${res.status}`);
-
-        const contentLength = res.headers.get('content-length');
-        if (!contentLength || parseInt(contentLength) === 0) return null;
-
+        if (!res.ok) throw new Error(`API Error: ${res.status}`);
         return res.json();
     };
 
-    const playTrack = (uri: string) => {
-        if (!playTrackContext) {
-            console.warn('[useSpotify] playTrack not available');
-            return;
-        }
-        playTrackContext(uri);
-    };
-
     const likeTrack = async (trackId: string) => {
-        await fetchWithAuth(`me/tracks?ids=${trackId}`, {
-            method: 'PUT',
-        });
+        await fetchWithAuth(`me/tracks?ids=${trackId}`, { method: 'PUT' });
     };
 
     const unlikeTrack = async (trackId: string) => {
-        await fetchWithAuth(`me/tracks?ids=${trackId}`, {
-            method: 'DELETE',
-        });
+        await fetchWithAuth(`me/tracks?ids=${trackId}`, { method: 'DELETE' });
     };
 
     const isTrackLiked = async (trackId: string): Promise<boolean> => {
@@ -48,7 +27,7 @@ export const useSpotify = () => {
 
     return {
         fetchWithAuth,
-        playTrack,
+        playTrack: playTrackContext,
         likeTrack,
         unlikeTrack,
         isTrackLiked,

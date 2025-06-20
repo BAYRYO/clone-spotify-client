@@ -4,157 +4,66 @@ import {
     useEffect,
     useRef,
     useState,
-    ReactNode,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import type { ReactNode } from 'react';
 
 interface SpotifyContextType {
-    accessToken: string | null;
-    setAccessToken: (token: string | null) => void;
     isAuthenticated: boolean;
+    user: { display_name: string; email: string; id: string } | null;
+    player: any;
     deviceId: string | null;
     playTrack: (uri: string) => void;
-    player: any;
-    user: { display_name: string; email: string } | null;
 }
 
 const SpotifyContext = createContext<SpotifyContextType | undefined>(undefined);
 
 export const SpotifyProvider = ({ children }: { children: ReactNode }) => {
-    const [accessToken, setAccessTokenState] = useState<string | null>(null);
-    const [deviceId, setDeviceId] = useState<string | null>(null);
-    const [user, setUser] = useState<{ display_name: string; email: string } | null>(null);
+    const [user, setUser] = useState<SpotifyContextType['user']>(null);
+    const [deviceId] = useState<string | null>(null);
     const playerRef = useRef<any>(null);
-    const navigate = useNavigate();
 
-    useEffect(() => {
-        const handleMessage = (event: MessageEvent) => {
-            console.log('[DEBUG] Message reçu', event);
-            if (event.origin !== 'http://127.0.0.1:3001') return;
-
-            const { type, accessToken, refreshToken } = event.data || {};
-            if (type === 'spotify_tokens' && accessToken && refreshToken) {
-                console.log('[SpotifyContext] Tokens reçus via postMessage');
-                localStorage.setItem('access_token', accessToken);
-                localStorage.setItem('refresh_token', refreshToken);
-                setAccessTokenState(accessToken);
-                navigate('/', { replace: true });
-            }
-        };
-
-        window.addEventListener('message', handleMessage);
-        return () => window.removeEventListener('message', handleMessage);
-    }, [navigate]);
-
-    useEffect(() => {
-        const token = localStorage.getItem('access_token');
-        if (token) setAccessTokenState(token);
-    }, []);
-
-    const setAccessToken = (token: string | null) => {
-        if (token) {
-            localStorage.setItem('access_token', token);
-        } else {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            setUser(null);
-        }
-        setAccessTokenState(token);
-    };
-
+    // Auth : récupère les infos utilisateur
     useEffect(() => {
         fetch('http://127.0.0.1:3001/me', { credentials: 'include' })
-            .then((res) => res.json())
-            .then((data) => {
-                if (data?.display_name) {
-                    setUser({ display_name: data.display_name, email: data.email });
-                    setAccessTokenState('cookie'); // identifie que c’est en cookie
-                }
+            .then((res) => {
+                if (!res.ok) throw new Error('Not authenticated');
+                return res.json();
             })
+            .then((data) => setUser(data))
             .catch(() => setUser(null));
     }, []);
 
-    useEffect(() => {
-        if (!accessToken) return;
+    const isAuthenticated = !!user;
 
-        window.onSpotifyWebPlaybackSDKReady = () => {
-            const player = new window.Spotify.Player({
-                name: 'Web Playback SDK',
-                getOAuthToken: (cb: any) => cb(accessToken),
-                volume: 0.5,
-            });
-
-            playerRef.current = player;
-
-            player.addListener('ready', ({ device_id }: any) => {
-                console.log('✅ Player ready with device ID:', device_id);
-                setDeviceId(device_id);
-            });
-
-            player.addListener('initialization_error', ({ message }: any) =>
-                console.error('Init error', message)
-            );
-            player.addListener('authentication_error', ({ message }: any) =>
-                console.error('Auth error', message)
-            );
-            player.addListener('account_error', ({ message }: any) =>
-                console.error('Account error', message)
-            );
-
-            player.connect();
-        };
-
-        if (window.Spotify) {
-            window.onSpotifyWebPlaybackSDKReady();
-        } else {
-            const script = document.createElement('script');
-            script.src = 'https://sdk.scdn.co/spotify-player.js';
-            script.async = true;
-            document.body.appendChild(script);
-        }
-    }, [accessToken]);
-
+    // Lecture d’un titre via le backend (proxy)
     const playTrack = async (uri: string) => {
-        if (!accessToken || !deviceId) return;
-
         try {
-            await fetch('https://api.spotify.com/v1/me/player', {
-                method: 'PUT',
+            const res = await fetch('http://127.0.0.1:3001/api/play', {
+                method: 'POST',
+                credentials: 'include',
                 headers: {
-                    Authorization: `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    device_ids: [deviceId],
-                    play: false,
-                }),
+                body: JSON.stringify({ uri }),
             });
 
-            await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({ uris: [uri] }),
-            });
-        } catch (error) {
-            console.error('[playTrack] Error:', error);
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(text);
+            }
+        } catch (err) {
+            console.error('[playTrack] Erreur backend:', err);
         }
     };
-
-    const isAuthenticated = !!accessToken;
 
     return (
         <SpotifyContext.Provider
             value={{
-                accessToken,
-                setAccessToken,
+                user,
                 isAuthenticated,
-                deviceId,
                 playTrack,
                 player: playerRef,
-                user,
+                deviceId,
             }}
         >
             {children}

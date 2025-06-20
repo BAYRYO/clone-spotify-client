@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSpotifyContext } from '../context/SpotifyContext';
-import { Repeat, Repeat1, Shuffle, Pause, Play, SkipBack, SkipForward, Volume2 } from 'lucide-react';
+import { useSpotify } from '../hooks/useSpotify';
+import { Repeat, Repeat1, Pause, Play, SkipBack, SkipForward, Volume2 } from 'lucide-react';
 
 const SpotifyMiniPlayer = () => {
-    const { player, accessToken } = useSpotifyContext();
+    const { player } = useSpotifyContext();
+    const { fetchWithAuth } = useSpotify();
     const sdkplayer = player.current;
+
     const [track, setTrack] = useState<any>(null);
     const [isPaused, setIsPaused] = useState(true);
     const [position, setPosition] = useState(0);
@@ -12,51 +15,45 @@ const SpotifyMiniPlayer = () => {
     const [volume, setVolume] = useState(0.5);
     const [repeatState, setRepeatState] = useState<'off' | 'track' | 'context'>('off');
     const [isPlayerReady, setIsPlayerReady] = useState(false);
+    const intervalRef = useRef<number | null>(null);
 
     const fetchRepeatState = async () => {
         try {
-            const res = await fetch('https://api.spotify.com/v1/me/player', {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                },
-            });
-
-            if (!res.ok) {
-                console.error('[SpotifyMiniPlayer] Failed to fetch repeat state, status:', res.status);
+            const res = await fetchWithAuth('me/player');
+            if (!res) {
+                console.warn('[SpotifyMiniPlayer] Aucune réponse de /me/player');
                 return;
             }
-
-            const text = await res.text();
-            if (!text) {
-                console.warn('[SpotifyMiniPlayer] Empty response body for repeat state');
-                return;
-            }
-
-            const data = JSON.parse(text);
-            setRepeatState(data.repeat_state);
+            setRepeatState(res.repeat_state);
         } catch (err) {
             console.error('[SpotifyMiniPlayer] Failed to fetch repeat state', err);
         }
     };
 
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
+    const toggleRepeat = async () => {
+        const nextState = repeatState === 'off' ? 'track' : repeatState === 'track' ? 'context' : 'off';
+        try {
+            await fetchWithAuth(`me/player/repeat?state=${nextState}`, { method: 'PUT' });
+            setRepeatState(nextState);
+        } catch (err) {
+            console.error('[toggleRepeat] Exception:', err);
+        }
+    };
 
     useEffect(() => {
-        if (!sdkplayer) return;
+        if (sdkplayer) {
+            const handleStateChange = (state: any) => {
+                if (!state) return;
+                setIsPlayerReady(true);
+                setIsPaused(state.paused);
+                setTrack(state.track_window.current_track);
+                setPosition(state.position);
+                setDuration(state.duration);
+            };
 
-        const handleStateChange = (state: any) => {
-            if (!state) return;
-            setIsPlayerReady(true);
-            setIsPaused(state.paused);
-            setTrack(state.track_window.current_track);
-            setPosition(state.position);
-            setDuration(state.duration);
-        };
-
-        sdkplayer.addListener('player_state_changed', handleStateChange);
-        return () => {
-            sdkplayer.removeListener('player_state_changed', handleStateChange);
-        };
+            sdkplayer.addListener('player_state_changed', handleStateChange);
+            return () => sdkplayer.removeListener('player_state_changed', handleStateChange);
+        }
     }, [sdkplayer]);
 
     useEffect(() => {
@@ -79,14 +76,13 @@ const SpotifyMiniPlayer = () => {
         }
     }, [volume, sdkplayer, isPlayerReady]);
 
+    useEffect(() => {
+        fetchRepeatState();
+    }, []);
+
     const togglePlay = () => {
-        if (!sdkplayer || !isPlayerReady) {
-            console.warn('[togglePlay] Player non prêt');
-            return;
-        }
-        sdkplayer.togglePlay().catch((err: any) =>
-            console.error('[togglePlay] Erreur togglePlay', err)
-        );
+        if (!sdkplayer || !isPlayerReady) return;
+        sdkplayer.togglePlay().catch(console.error);
     };
 
     const skipNext = () => {
@@ -113,37 +109,6 @@ const SpotifyMiniPlayer = () => {
         return `${minutes}:${seconds}`;
     };
 
-    const toggleRepeat = async () => {
-        if (!accessToken) return;
-
-        const nextState = repeatState === 'off' ? 'track' : repeatState === 'track' ? 'context' : 'off';
-
-        try {
-            const res = await fetch(
-                `https://api.spotify.com/v1/me/player/repeat?state=${nextState}`,
-                {
-                    method: 'PUT',
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                    },
-                }
-            );
-
-            if (res.ok) {
-                setRepeatState(nextState);
-            } else {
-                const err = await res.json();
-                console.error('[toggleRepeat] Spotify API error:', err);
-            }
-        } catch (err) {
-            console.error('[toggleRepeat] Exception:', err);
-        }
-    };
-
-    useEffect(() => {
-        if (accessToken) fetchRepeatState();
-    }, [accessToken]);
-
     if (!track) return null;
 
     return (
@@ -151,7 +116,6 @@ const SpotifyMiniPlayer = () => {
             <div className="flex items-center justify-between gap-6">
                 <div className="flex items-center gap-4 min-w-0">
                     <img src={track.album.images?.[2]?.url || '/default-cover.jpg'} alt={track.name} className="w-12 h-12 rounded" />
-
                     <div className="truncate">
                         <p className="font-medium truncate">{track.name}</p>
                         <p className="text-sm text-gray-400 truncate">

@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSpotify } from '../hooks/useSpotify';
-import { useSpotifyContext } from '../context/SpotifyContext';
+import TrackCard from '../components/TrackCard';
 
 export default function SearchPage() {
-    const { accessToken } = useSpotifyContext();
     const { fetchWithAuth, playTrack } = useSpotify();
     const [query, setQuery] = useState('');
     const [results, setResults] = useState<any[]>([]);
@@ -11,8 +10,6 @@ export default function SearchPage() {
     const abortControllerRef = useRef<AbortController | null>(null);
 
     useEffect(() => {
-        if (!accessToken) return;
-
         if (!query.trim()) {
             setResults([]);
             return;
@@ -38,7 +35,7 @@ export default function SearchPage() {
             clearTimeout(timeout);
             controller.abort();
         };
-    }, [query, accessToken]);
+    }, [query]);
 
     return (
         <div className="p-6 text-white">
@@ -54,23 +51,11 @@ export default function SearchPage() {
 
             <ul className="mt-6 space-y-4">
                 {results.map((track) => (
-                    <li
+                    <TrackCard
                         key={track.id}
-                        className="flex items-center gap-4 hover:bg-neutral-800 p-2 rounded cursor-pointer transition"
-                        onClick={() => playTrack(track.uri)}
-                    >
-                        <img
-                            src={track.album.images[2]?.url}
-                            alt={track.name}
-                            className="w-12 h-12 rounded object-cover"
-                        />
-                        <div>
-                            <p className="font-medium">{track.name}</p>
-                            <p className="text-sm text-gray-400">
-                                {track.artists.map((a: any) => a.name).join(', ')}
-                            </p>
-                        </div>
-                    </li>
+                        track={track}
+                        onPlay={() => playTrack(track.uri)}
+                    />
                 ))}
             </ul>
         </div>
