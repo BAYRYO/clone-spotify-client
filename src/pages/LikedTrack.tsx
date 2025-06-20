@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSpotify } from '../hooks/useSpotify';
 import { Heart, Loader2 } from 'lucide-react';
-import SpotifyMiniPlayer from '../components/SpotifyMiniPlayer';
 
 export default function LikedTracksPage() {
     const { fetchWithAuth, playTrack, unlikeTrack } = useSpotify();
@@ -101,8 +100,6 @@ export default function LikedTracksPage() {
                     <Loader2 className="w-6 h-6" />
                 </div>
             )}
-
-            <SpotifyMiniPlayer />
         </div>
     );
 }

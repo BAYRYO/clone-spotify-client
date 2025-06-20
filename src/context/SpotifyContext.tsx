@@ -83,7 +83,7 @@ export const SpotifyProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [accessToken]);
 
-    const transferPlayback = async () => {
+    const playTrack = async (uri: string) => {
         if (!accessToken || !deviceId) return;
 
         try {
@@ -98,26 +98,20 @@ export const SpotifyProvider = ({ children }: { children: ReactNode }) => {
                     play: false,
                 }),
             });
-            console.log('Playback transferred to Web SDK automatically');
+
+            await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                body: JSON.stringify({ uris: [uri] }),
+            });
         } catch (error) {
-            console.error('[transferPlayback] Error:', error);
+            console.error('[playTrack] Error:', error);
         }
     };
 
-    const playTrack = async (uri: string) => {
-        await transferPlayback();
-
-        if (!deviceId) return;
-
-        await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${accessToken}`,
-            },
-            body: JSON.stringify({ uris: [uri] }),
-        });
-    };
 
     const isAuthenticated = !!accessToken;
 

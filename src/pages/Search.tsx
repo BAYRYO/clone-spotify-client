@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSpotify } from '../hooks/useSpotify';
 import { Heart, HeartOff } from 'lucide-react';
-import SpotifyMiniPlayer from '../components/SpotifyMiniPlayer';
 
 export default function Search() {
     const {
@@ -17,11 +16,17 @@ export default function Search() {
     const [showFavorites, setShowFavorites] = useState(false);
 
     useEffect(() => {
+        let controller: AbortController;
+
         const delayDebounce = setTimeout(async () => {
             if (!query.trim()) return;
             try {
+                controller?.abort();
+                controller = new AbortController();
+
                 const data = await fetchWithAuth(
-                    `search?q=${encodeURIComponent(query)}&type=track&limit=10`
+                    `search?q=${encodeURIComponent(query)}&type=track&limit=10`,
+                    { signal: controller.signal }
                 );
                 setTracks(data.tracks.items);
 
@@ -118,8 +123,6 @@ export default function Search() {
                     ))}
                 </ul>
             )}
-
-            <SpotifyMiniPlayer />
         </div>
     );
 }

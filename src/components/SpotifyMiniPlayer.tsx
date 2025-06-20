@@ -150,7 +150,8 @@ const SpotifyMiniPlayer = () => {
         <div className="fixed bottom-0 left-0 right-0 bg-neutral-900 border-t border-neutral-700 px-4 py-3 flex flex-col gap-2 text-white z-50">
             <div className="flex items-center justify-between gap-6">
                 <div className="flex items-center gap-4 min-w-0">
-                    <img src={track.album.images[2]?.url} alt={track.name} className="w-12 h-12 rounded" />
+                    <img src={track.album.images?.[2]?.url || '/default-cover.jpg'} alt={track.name} className="w-12 h-12 rounded" />
+
                     <div className="truncate">
                         <p className="font-medium truncate">{track.name}</p>
                         <p className="text-sm text-gray-400 truncate">

@@ -4,6 +4,7 @@ export const useSpotify = () => {
     const { accessToken, deviceId, playTrack: playTrackContext } = useSpotifyContext();
 
     const fetchWithAuth = async (endpoint: string, options: RequestInit = {}) => {
+        if (!accessToken) throw new Error('[fetchWithAuth] No accessToken');
         const res = await fetch(`https://api.spotify.com/v1/${endpoint}`, {
             ...options,
             headers: {
