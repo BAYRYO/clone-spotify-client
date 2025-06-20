@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSpotify } from '../hooks/useSpotify';
+import { useSpotifyContext } from '../context/SpotifyContext';
 import { Heart, Loader2 } from 'lucide-react';
 
 export default function LikedTracksPage() {
+    const { accessToken } = useSpotifyContext();
     const { fetchWithAuth, playTrack, unlikeTrack } = useSpotify();
     const [likedTracks, setLikedTracks] = useState<any[]>([]);
     const [nextUrl, setNextUrl] = useState<string | null>(null);
@@ -32,10 +34,11 @@ export default function LikedTracksPage() {
         }
     };
 
-    // Chargement initial
+    // Chargement initial après accessToken prêt
     useEffect(() => {
+        if (!accessToken) return;
         fetchLikedTracks();
-    }, []);
+    }, [accessToken]);
 
     // Scroll infini
     useEffect(() => {

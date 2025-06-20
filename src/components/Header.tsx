@@ -45,6 +45,12 @@ export default function Header() {
                                 Voir le profil
                             </Link>
                             <Link
+                                to="/top"
+                                className="block px-4 py-2 text-sm text-gray-200 hover:bg-neutral-700"
+                            >
+                                Top des titres
+                            </Link>
+                            <Link
                                 to="/liked"
                                 className="block px-4 py-2 text-sm text-gray-200 hover:bg-neutral-700"
                             >

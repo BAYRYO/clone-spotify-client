@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useSpotify } from '../hooks/useSpotify';
+import { useSpotifyContext } from '../context/SpotifyContext';
 
 export default function TopTracks() {
+    const { accessToken } = useSpotifyContext();
     const { fetchWithAuth, playTrack } = useSpotify();
     const [tracks, setTracks] = useState<any[]>([]);
 
     useEffect(() => {
-        fetchWithAuth('me/top/tracks?limit=20').then(res => setTracks(res.items)).catch(console.error);
-    }, []);
+        if (!accessToken) return;
+        fetchWithAuth('me/top/tracks?limit=20')
+            .then(res => setTracks(res.items))
+            .catch(console.error);
+    }, [accessToken]);
 
     return (
         <div className="p-6 text-white">
