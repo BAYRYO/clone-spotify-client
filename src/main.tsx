@@ -15,8 +15,8 @@ import TopTracks from './pages/TopTracks.tsx';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <SpotifyProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <SpotifyProvider>
         <Header />
         <main className="min-h-screen bg-black text-white pb-32">
           <Routes>
@@ -30,7 +30,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           </Routes>
           <SpotifyMiniPlayer />
         </main>
-      </BrowserRouter>
-    </SpotifyProvider>
+      </SpotifyProvider>
+    </BrowserRouter>
   </React.StrictMode>,
 );

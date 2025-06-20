@@ -7,11 +7,19 @@ export default function App() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isAuthenticated || !accessToken) {
-      // Redirige vers Spotify login si non connecté
-      window.location.href = 'http://localhost:3001/login';
+    if (!isAuthenticated) {
+      console.log('[App] Utilisateur non connecté');
     }
-  }, [isAuthenticated, accessToken]);
+  }, [isAuthenticated]);
+
+  if (!isAuthenticated || !accessToken) {
+    return (
+      <div className="p-6 text-white text-center">
+        <h1 className="text-3xl font-bold mb-4">🎶 Bienvenue sur ton clone Spotify</h1>
+        <p className="text-lg mb-6">Tu n'es pas connecté. Clique sur le bouton <strong>Connexion</strong> en haut à droite.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 text-white">

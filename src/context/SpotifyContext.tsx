@@ -1,4 +1,12 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import {
+    createContext,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+    ReactNode,
+} from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface SpotifyContextType {
     accessToken: string | null;
@@ -17,6 +25,26 @@ export const SpotifyProvider = ({ children }: { children: ReactNode }) => {
     const [deviceId, setDeviceId] = useState<string | null>(null);
     const [user, setUser] = useState<{ display_name: string; email: string } | null>(null);
     const playerRef = useRef<any>(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            console.log('[DEBUG] Message reçu', event);
+            if (event.origin !== 'http://127.0.0.1:3001') return;
+
+            const { type, accessToken, refreshToken } = event.data || {};
+            if (type === 'spotify_tokens' && accessToken && refreshToken) {
+                console.log('[SpotifyContext] Tokens reçus via postMessage');
+                localStorage.setItem('access_token', accessToken);
+                localStorage.setItem('refresh_token', refreshToken);
+                setAccessTokenState(accessToken);
+                navigate('/', { replace: true });
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [navigate]);
 
     useEffect(() => {
         const token = localStorage.getItem('access_token');
@@ -28,6 +56,7 @@ export const SpotifyProvider = ({ children }: { children: ReactNode }) => {
             localStorage.setItem('access_token', token);
         } else {
             localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
             setUser(null);
         }
         setAccessTokenState(token);
@@ -66,9 +95,15 @@ export const SpotifyProvider = ({ children }: { children: ReactNode }) => {
                 setDeviceId(device_id);
             });
 
-            player.addListener('initialization_error', ({ message }: any) => console.error('Init error', message));
-            player.addListener('authentication_error', ({ message }: any) => console.error('Auth error', message));
-            player.addListener('account_error', ({ message }: any) => console.error('Account error', message));
+            player.addListener('initialization_error', ({ message }: any) =>
+                console.error('Init error', message)
+            );
+            player.addListener('authentication_error', ({ message }: any) =>
+                console.error('Auth error', message)
+            );
+            player.addListener('account_error', ({ message }: any) =>
+                console.error('Account error', message)
+            );
 
             player.connect();
         };
@@ -112,7 +147,6 @@ export const SpotifyProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-
     const isAuthenticated = !!accessToken;
 
     return (
@@ -134,6 +168,7 @@ export const SpotifyProvider = ({ children }: { children: ReactNode }) => {
 
 export const useSpotifyContext = () => {
     const context = useContext(SpotifyContext);
-    if (!context) throw new Error('useSpotifyContext must be used within a SpotifyProvider');
+    if (!context)
+        throw new Error('useSpotifyContext must be used within a SpotifyProvider');
     return context;
 };

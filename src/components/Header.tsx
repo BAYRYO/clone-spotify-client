@@ -76,7 +76,7 @@ export default function Header() {
                         const left = window.screen.width / 2 - width / 2;
                         const top = window.screen.height / 2 - height / 2;
                         window.open(
-                            'http://localhost:3001/login',
+                            'http://127.0.0.1:3001/login',
                             'Spotify Login',
                             `width=${width},height=${height},top=${top},left=${left}`
                         );
@@ -86,6 +86,7 @@ export default function Header() {
                     Connexion
                 </button>
             )}
+
         </header>
     );
 }
