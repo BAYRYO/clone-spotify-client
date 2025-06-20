@@ -21,7 +21,7 @@ export default function LikedTracksPage() {
             const newTracks = res.items.map((item: any) => item.track);
             setLikedTracks((prev) => {
                 const existingIds = new Set(prev.map((t) => t.id));
-                const filtered = newTracks.filter((t) => !existingIds.has(t.id));
+                const filtered = newTracks.filter((t: any) => !existingIds.has(t.id));
                 return [...prev, ...filtered];
             });
             setNextUrl(res.next ? res.next.replace('https://api.spotify.com/v1/', '') : null);
