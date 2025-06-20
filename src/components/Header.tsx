@@ -69,12 +69,22 @@ export default function Header() {
             )}
 
             {!isAuthenticated && (
-                <Link
-                    to="/login"
+                <button
+                    onClick={() => {
+                        const width = 500;
+                        const height = 600;
+                        const left = window.screen.width / 2 - width / 2;
+                        const top = window.screen.height / 2 - height / 2;
+                        window.open(
+                            'http://localhost:3001/login',
+                            'Spotify Login',
+                            `width=${width},height=${height},top=${top},left=${left}`
+                        );
+                    }}
                     className="text-sm text-gray-300 hover:text-white px-3 py-1 rounded bg-neutral-800 hover:bg-neutral-700 transition"
                 >
                     Connexion
-                </Link>
+                </button>
             )}
         </header>
     );

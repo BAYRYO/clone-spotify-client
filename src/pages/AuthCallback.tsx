@@ -1,29 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const AuthCallback = () => {
     const navigate = useNavigate();
-    const alreadyHandled = useRef(false); // ✅ empêche double exécution
 
     useEffect(() => {
-        if (alreadyHandled.current) return;
-        alreadyHandled.current = true;
+        const handleMessage = (event: MessageEvent) => {
+            if (event.origin !== 'http://127.0.0.1:5173') return;
 
-        const params = new URLSearchParams(window.location.search);
-        const accessToken = params.get('access_token');
-        const refreshToken = params.get('refresh_token');
+            const { type, accessToken, refreshToken } = event.data || {};
+            if (type === 'spotify_tokens' && accessToken && refreshToken) {
+                localStorage.setItem('access_token', accessToken);
+                localStorage.setItem('refresh_token', refreshToken);
+                navigate('/', { replace: true });
+            }
+        };
 
-        console.log('[AuthCallback] URL params:', Object.fromEntries(params.entries()));
+        window.addEventListener('message', handleMessage);
+        // Fallback : redirige si la page est accédée seule
+        setTimeout(() => navigate('/'), 3000);
 
-        if (accessToken && refreshToken) {
-            localStorage.setItem('access_token', accessToken);
-            localStorage.setItem('refresh_token', refreshToken);
-            console.log('[AuthCallback] Tokens saved, redirecting to /');
-            navigate('/', { replace: true });
-        } else {
-            console.warn('[AuthCallback] Tokens missing');
-            navigate('/error');
-        }
+        return () => window.removeEventListener('message', handleMessage);
     }, [navigate]);
 
     return (
